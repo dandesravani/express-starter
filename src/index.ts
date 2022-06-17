@@ -14,7 +14,8 @@ app.use(cors())
 const randomSentences = (n: number): readonly string[] => {
     return range(0, n).map(_ => faker.lorem.sentence())
 }
-const sentences = randomSentences(40)
+
+let sentences = randomSentences(40)
 
 
 app.get('/sentences', (req, res) => {
@@ -30,9 +31,16 @@ app.get('/sentences', (req, res) => {
     const start = (page - 1) * pageSize
     const end = page * pageSize
     const sentencesPerPage = sentences.slice(start, end)
-    res.json({ sentencesPerPage })
+    const totalPages = Math.floor((sentences.length / sentencesPerPage.length) )
+    res.json({ sentences,sentencesPerPage ,totalPages})
 })
 
+
+app.post('/sentences', (req, res) => {
+    const sentence = req.body.sentence
+    sentences = [...sentences,sentence]
+    res.json(sentences)
+})
 
 const port = process.env['port'] || 4000
 app.listen(port, () => {
