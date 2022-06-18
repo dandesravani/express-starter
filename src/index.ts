@@ -1,21 +1,22 @@
 import express from 'express'
 import chalk from 'chalk';
 import { faker } from '@faker-js/faker';
+import { PrismaClient } from '@prisma/client'
 import { range } from 'lodash';
 import cors from 'cors'
 
-
+const prisma = new PrismaClient()
 const app = express()
 
 app.use(express.json())
 app.use(cors())
 
 
-const randomSentences = (n: number): readonly string[] => {
-    return range(0, n).map(_ => faker.lorem.sentence())
+const randomSentences = (n: number) => {
+    return range(0, n).map(_ => ({ sentence: faker.lorem.sentence() }))
 }
 
-let sentences = randomSentences(40)
+export let sentences = randomSentences(40)
 
 
 app.get('/sentences', (req, res) => {
@@ -31,14 +32,14 @@ app.get('/sentences', (req, res) => {
     const start = (page - 1) * pageSize
     const end = page * pageSize
     const sentencesPerPage = sentences.slice(start, end)
-    const totalPages = Math.floor((sentences.length / sentencesPerPage.length) )
-    res.json({ sentences,sentencesPerPage ,totalPages})
+    const totalPages = Math.ceil((sentences.length / pageSize))
+    res.json({ sentences, sentencesPerPage, totalPages })
 })
 
 
 app.post('/sentences', (req, res) => {
-    const sentence = req.body.sentence
-    sentences = [...sentences,sentence]
+    const sentence = req.body
+    sentences = [...sentences, sentence]
     res.json(sentences)
 })
 
