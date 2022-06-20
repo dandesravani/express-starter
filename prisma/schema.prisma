@@ -10,7 +10,8 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-model Sentence {
+model Todo {
   id       String @id @default(uuid())
-  sentence String
+  title String
+  done Boolean
 }

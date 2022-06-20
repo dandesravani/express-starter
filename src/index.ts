@@ -1,8 +1,6 @@
 import express from 'express'
 import chalk from 'chalk';
-import { faker } from '@faker-js/faker';
 import { PrismaClient } from '@prisma/client'
-import { range } from 'lodash';
 import cors from 'cors'
 
 const prisma = new PrismaClient()
@@ -12,35 +10,63 @@ app.use(express.json())
 app.use(cors())
 
 
-const randomSentences = (n: number) => {
-    return range(0, n).map(_ => ({ sentence: faker.lorem.sentence() }))
-}
 
-export let sentences = randomSentences(40)
-
-
-app.get('/sentences', (req, res) => {
+app.get('/todos', async (req, res) => {
     let page = req.query['page'] as any as number
     let pageSize = req.query['size'] as any as number
-    if (page == undefined && pageSize == undefined) {
-        res.json({ sentences })
-    } else if (pageSize == undefined) {
-        pageSize = 6
-    } else if (page == undefined) {
-        page = 1
+    const skip = (pageSize * page) - pageSize
+    const take = Number(pageSize)
+    if (page == 0) {
+        return res.status(400).send("page should be greater than or equal to 1")
     }
-    const start = (page - 1) * pageSize
-    const end = page * pageSize
-    const sentencesPerPage = sentences.slice(start, end)
-    const totalPages = Math.ceil((sentences.length / pageSize))
-    res.json({ sentences, sentencesPerPage, totalPages })
+    const allTodos = await prisma.todo.findMany({})
+    const totalPages = Math.ceil(allTodos.length / pageSize)
+
+    const paginationTodos = await prisma.todo.findMany({
+            skip: skip,
+            take: take,
+        })
+    return res.status(200).send({ paginationTodos, totalPages })
+    }
+)
+
+app.post('/todos', async (req, res) => {
+    const { title ,done} = req.body
+    const newTodo = await prisma.todo.create({
+        data: {
+            title: title,
+            done:done
+        }
+    })
+    return res.status(200).send(newTodo)
 })
 
+app.put('/todos/:id', async (req, res) => {
+    const id = req.params.id
+    console.log(id)
+    const { title, done } = req.body
+    const editTodo = await prisma.todo.update({
+        where: {
+            id:id
+        },
+        data: {
+            title: title,
+            done:done
+        }
+    })
+     return res.status(200).send(editTodo)
+})
 
-app.post('/sentences', (req, res) => {
-    const sentence = req.body
-    sentences = [...sentences, sentence]
-    res.json(sentences)
+app.delete('/todos/:id', async (req, res) => {
+    const id = req.params.id
+
+    const todo = await prisma.todo.delete({
+        where: {
+            id:id
+        }
+    })
+    console.log(id,todo)
+    return res.status(200).send(todo)
 })
 
 const port = process.env['port'] || 4000
