@@ -11,7 +11,14 @@ datasource db {
 }
 
 model Todo {
-  id       String @id @default(uuid())
+  id    String  @id @default(uuid())
   title String
-  done Boolean
+  done  Boolean
+}
+
+model User {
+  id       String @id @default(uuid())
+  username String
+  email    String @unique
+  password String
 }
